@@ -1,0 +1,895 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Booli | Support & About — Next-Gen Messaging</title>
+   <link rel="icon" type="image/png" sizes="32x32" href="assets/booli_app_logo.png">
+    <!-- Fonts + Tailwind + Font Awesome -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  
+    <!-- Firebase SDK (Compat version for realtime DB) -->
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+    <style>
+        /* ===== BASE & RESET ===== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background: #000000; /* AMOLED Black base */
+    color: #eef2ff;
+    scroll-behavior: smooth;
+    position: relative;
+    overflow-x: hidden;
+}
+
+/* ===== STARFIELD CANVAS ===== */
+#starCanvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* ===== CONTENT WRAPPER ===== */
+.content-wrapper {
+    position: relative;
+    z-index: 2;
+}
+
+/* ===== CSS VARIABLES (MISSING) ===== */
+:root {
+    --booli-green: #134E8E;
+    --booli-green-dim: #0e3d72;
+    --booli-dark-red: #8B1E1E;
+    --booli-dark-red-glow: rgba(139, 30, 30, 0.5);
+    --booli-card-dark: rgba(10, 12, 18, 0.85);
+    --booli-border-dark: rgba(42, 46, 52, 0.5);
+    --primary: #134E8E;
+    --primary-dim: #0e3d72;
+    --secondary: #1a1d23;
+    --hover: rgba(19, 78, 142, 0.2);
+    --border: rgba(42, 46, 52, 0.6);
+    --text-primary: #eef2ff;
+    --text-secondary: #9ca3af;
+}
+
+/* ===== GLOSSY CARD EFFECT ===== */
+.glass-card {
+    background: rgba(10, 12, 18, 0.75);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(19, 78, 142, 0.3);
+    border-radius: 2rem;
+    transition: all 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    position: relative;
+    overflow: hidden;
+}
+
+.glass-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
+    transition: left 0.6s ease;
+    pointer-events: none;
+}
+
+.glass-card:hover::before {
+    left: 100%;
+}
+
+.glass-card:hover {
+    border-color: #134E8E;
+    transform: translateY(-5px);
+    box-shadow: 0 20px 35px -12px rgba(19, 78, 142, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+/* ===== CUSTOM SCROLLBAR ===== */
+::-webkit-scrollbar {
+    width: 5px;
+}
+::-webkit-scrollbar-track {
+    background: #0a0c0f;
+}
+::-webkit-scrollbar-thumb {
+    background: #134E8E;
+    border-radius: 20px;
+}
+
+/* ===== NEON TEXT ===== */
+.neon-text {
+    color: #134E8E;
+    text-shadow: 0 0 6px rgba(19, 78, 142, 0.5);
+}
+
+/* ===== BUTTON STYLES ===== */
+.btn-neon {
+    background: #134E8E;
+    color: #ffffff;
+    font-weight: 700;
+    transition: 0.2s;
+    border: none;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-neon::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -60%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 70%);
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+}
+
+.btn-neon:hover::after {
+    opacity: 1;
+}
+
+.btn-neon:hover {
+    background: #0e3d72;
+    transform: scale(1.02);
+    box-shadow: 0 0 18px #134E8E;
+}
+
+.btn-outline-neon {
+    border: 1.5px solid #134E8E;
+    background: rgba(19, 78, 142, 0.15);
+    backdrop-filter: blur(4px);
+    color: #134E8E;
+    font-weight: 600;
+    transition: 0.2s;
+}
+
+.btn-outline-neon:hover {
+    background: #134E8E;
+    color: #ffffff;
+    box-shadow: 0 0 12px #134E8E;
+}
+
+.btn-outline-red {
+    border: 1.5px solid #8B1E1E;
+    background: rgba(139, 30, 30, 0.15);
+    backdrop-filter: blur(4px);
+    color: #e68a8a;
+    font-weight: 600;
+    transition: 0.2s;
+}
+
+.btn-outline-red:hover {
+    background: #8B1E1E;
+    color: #ffffff;
+    box-shadow: 0 0 12px rgba(139,30,30,0.5);
+}
+
+.btn-red-accent {
+    background: #8B1E1E;
+    color: white;
+    transition: 0.2s;
+}
+
+.btn-red-accent:hover {
+    background: #a12222;
+    box-shadow: 0 0 12px #8B1E1E;
+}
+
+/* ===== FEATURE ICON ===== */
+.feature-icon {
+    background: rgba(19, 78, 142, 0.2);
+    backdrop-filter: blur(4px);
+    border-radius: 1.2rem;
+    width: 52px;
+    height: 52px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.7rem;
+    color: #134E8E;
+    border: 1px solid rgba(19, 78, 142, 0.4);
+}
+
+/* ===== ANIMATIONS ===== */
+@keyframes float {
+    0% { transform: translateY(0px); }
+    50% { transform: translateY(-8px); }
+    100% { transform: translateY(0px); }
+}
+
+.float-animation {
+    animation: float 4s ease-in-out infinite;
+}
+
+@keyframes modalPop {
+    0% { transform: scale(0.95); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes chatPop {
+    0% { transform: translateY(20px) scale(0.95); opacity: 0; }
+    100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+.modal {
+    animation: modalPop 0.3s ease-out;
+}
+
+#chat-window {
+    animation: chatPop 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+}
+
+/* ===== TOP NEON BAR ===== */
+.top-neon-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    z-index: 9999;
+    background: #134E8E;
+    box-shadow: 0 0 12px #134E8E, 0 0 24px rgba(19, 78, 142, 0.5);
+}
+
+/* ===== GLOSSY NAVIGATION ===== */
+nav {
+    background: rgba(0, 0, 0, 0.85) !important;
+    backdrop-filter: blur(20px) !important;
+    border-bottom: 1px solid rgba(19, 78, 142, 0.3) !important;
+}
+
+/* ===== INPUT & TEXTAREA STYLES ===== */
+input, textarea {
+    background: rgba(26, 29, 35, 0.8);
+    backdrop-filter: blur(4px);
+    color: #eef2ff;
+    border-color: rgba(42, 46, 52, 0.6);
+}
+
+input:focus, textarea:focus {
+    border-color: #134E8E;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(19, 78, 142, 0.3);
+}
+
+/* ===== CHAT WINDOW ===== */
+#chat-window {
+    background: rgba(17, 19, 22, 0.95);
+    backdrop-filter: blur(16px);
+    border: 1px solid rgba(19, 78, 142, 0.4);
+}
+
+/* ===== SHOOTING STAR TRAIL ===== */
+.star-trail {
+    position: fixed;
+    pointer-events: none;
+    z-index: 9998;
+    filter: blur(1px);
+}
+
+/* ===== UTILITY CLASSES ===== */
+.bg-green-premium {
+    background: #134E8E;
+}
+
+.text-green-premium {
+    color: #134E8E;
+}
+
+/* ===== FLOATING BUTTONS CONTAINER ===== */
+#floating-buttons {
+    z-index: 99999;
+}
+
+#go-to-top-btn {
+    transition: all 0.3s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+}
+
+/* ===== FIREBASE LIVE USER COUNT PLACEHOLDER ===== */
+#live-user-count {
+    font-weight: 800;
+}
+
+/* ===== RESPONSIVE ADJUSTMENTS ===== */
+@media (max-width: 768px) {
+    .glass-card {
+        border-radius: 1.5rem;
+    }
+    .feature-icon {
+        width: 44px;
+        height: 44px;
+        font-size: 1.4rem;
+    }
+    #chat-window {
+        width: calc(100vw - 2rem);
+        right: 1rem;
+        bottom: 6rem;
+    }
+}
+
+/* ===== ACCESSIBILITY & FOCUS ===== */
+button:focus-visible,
+a:focus-visible {
+    outline: 2px solid #134E8E;
+    outline-offset: 2px;
+}
+
+
+
+
+        
+    </style>
+</head>
+<body>
+    <!-- Canvas for shooting stars -->
+    <canvas id="starCanvas"></canvas>
+    
+    <div class="content-wrapper">
+        <!-- TOP NEON BAR -->
+        <div class="top-neon-bar"></div>
+        
+        <!-- Navigation - Glossy AMOLED -->
+        <nav class="fixed top-0 left-0 w-full z-50 py-4 px-6 md:px-12 shadow-[0_0_25px_rgba(19,78,142,0.15)]">
+            <div class="max-w-7xl mx-auto flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 bg-[#134E8E] rounded-xl flex items-center justify-center shadow-md overflow-hidden">
+                        <img src="assets/booli_app_logo.png" alt="Booli Icon" class="w-10 h-10 object-contain">
+                    </div>
+                    <span class="text-2xl font-bold tracking-tight"><span class="text-white">Booli</span><span class="text-[#134E8E]">.</span></span>
+                </div>
+                <div class="hidden md:flex gap-8 text-gray-300 font-medium">
+                    <a href="#about" class="hover:text-[#134E8E] transition duration-200">About</a>
+                    <a href="#firsts" class="hover:text-[#134E8E] transition duration-200">Firsts</a>
+                    <a href="#features" class="hover:text-[#134E8E] transition duration-200">Features</a>
+                    <a href="#creators" class="hover:text-[#134E8E] transition duration-200">Creators</a>
+                    <a href="#support" class="hover:text-[#134E8E] transition duration-200">Support</a>
+                </div>
+                <div class="flex items-center gap-3">
+                    <a href="https://booli-c0bab.web.app" target="_blank" class="btn-neon px-5 py-2 rounded-full text-sm font-semibold shadow-lg flex items-center gap-2">
+                        <i class="fas fa-rocket"></i> Launch Booli
+                    </a>
+                    <a onclick="showDownloadModal()" class="btn-outline-neon px-5 py-2 rounded-full text-sm font-semibold shadow-lg flex items-center gap-2 cursor-pointer">
+                        <i class="fas fa-download"></i> Download Booli
+                    </a>
+                </div>
+            </div>
+        </nav>
+        
+        <!-- Hero Section -->
+        <section class="relative pt-36 pb-20 px-6 md:px-12 max-w-7xl mx-auto text-center">
+            <div class="relative z-10">
+                <div class="inline-block px-4 py-1 rounded-full bg-[#134E8E]/20 border border-[#134E8E]/40 text-[#134E8E] text-sm font-mono mb-6 backdrop-blur-sm">
+                    <i class="fas fa-bolt mr-1"></i> NEXT-GEN MESSAGING
+                </div>
+                <h1 class="text-5xl md:text-7xl font-bold tracking-tighter leading-tight text-white">
+                    Connect <span class="text-[#134E8E]">Beyond Limits</span>
+                </h1>
+                <p class="text-gray-300 text-lg md:text-xl max-w-2xl mx-auto mt-6">
+                    Booli is more than a messenger — it’s a complete ecosystem. Secure, fast, and built for the future.
+                </p>
+                <div class="flex flex-wrap justify-center gap-4 mt-10">
+                    <a href="#creators" class="btn-neon px-8 py-3 rounded-full text-md font-bold"><i class="fas fa-users mr-2"></i> Meet the creators</a>
+                    <a href="#support" class="btn-outline-red px-8 py-3 rounded-full text-md font-bold"><i class="fas fa-headset mr-2"></i> Get support</a>
+                </div>
+                <div class="mt-16 flex justify-center">
+                    <div class="glass-card px-6 py-3 flex items-center gap-4 text-sm">
+                        <i class="fas fa-shield-alt text-[#134E8E] text-xl"></i>
+                        <span class="text-gray-200">🔐 End-to-End Encrypted</span>
+                        <i class="fas fa-circle text-[#134E8E] text-[6px]"></i>
+                        <span class="text-gray-200"><i class="fas fa-video mr-1"></i> HD Calls</span>
+                        <i class="fas fa-circle text-[#134E8E] text-[6px]"></i>
+                        <span class="text-gray-200"><i class="fas fa-cloud-upload-alt"></i> Cloud Media</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- About Booli Section -->
+        <section id="about" class="py-20 px-6 md:px-12 max-w-7xl mx-auto">
+            <div class="grid md:grid-cols-2 gap-12 items-center">
+                <div class="order-2 md:order-1">
+                    <div class="inline-block px-3 py-1 rounded-full bg-[#8B1E1E]/20 text-[#e68a8a] text-xs font-mono mb-4 backdrop-blur-sm">OUR STORY</div>
+                    <h2 class="text-4xl md:text-5xl font-bold mb-6 text-white">Built by <span class="text-[#134E8E]">friends</span>, for everyone.</h2>
+                    <p class="text-gray-300 text-lg leading-relaxed mb-6">
+                        Booli started as a passion project between <span class="text-white font-semibold">Md. Amran</span> and <span class="text-white font-semibold">Musfiq Ayon</span> — two developers who believed messaging apps should be powerful, private, and beautiful.
+                        Today, Booli delivers real-time chat, crystal-clear voice & video calls, cloud media sharing, and smart tools — all wrapped in a sleek dark UI with vibrant green and deep red accents.
+                    </p>
+                    <div class="flex gap-4 flex-wrap">
+                        <div class="flex items-center gap-2">
+    <i class="fas fa-check-circle text-[#134E8E]"></i> 
+    <span class="text-gray-300">Active Users: </span>
+    <span id="about-user-count" class="text-[#134E8E] font-bold text-xl counter" data-target="50000">0</span>
+    <span class="text-gray-300">+</span>
+</div>
+                        <div class="flex items-center gap-2"><i class="fas fa-check-circle text-[#134E8E]"></i> <span class="text-gray-300">Real-time sync</span></div>
+                        <div class="flex items-center gap-2"><i class="fas fa-check-circle text-[#134E8E]"></i> <span class="text-gray-300">Open community</span></div>
+                    </div>
+                </div>
+                <div class="order-1 md:order-2 flex justify-center">
+                    <div class="relative">
+                        <div class="absolute -inset-4 bg-[#134E8E]/10 rounded-full blur-xl"></div>
+                        <img src="assets/booli _app _logo_1080.png" alt="Booli Logo" class="relative z-10 w-64 h-64 rounded-3xl shadow-2xl border border-gray-700 float-animation">
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- FIRSTS SECTION -->
+        <section id="firsts" class="py-20 px-6 md:px-12 max-w-7xl mx-auto">
+            <div class="text-center mb-14">
+                <div class="inline-block px-3 py-1 rounded-full bg-[#134E8E]/20 text-[#134E8E] text-xs font-mono mb-3 backdrop-blur-sm">BOOLI FIRSTS</div>
+                <h2 class="text-4xl md:text-5xl font-bold text-white">Our <span class="text-[#134E8E]">First Moments</span></h2>
+                <p class="text-gray-400 max-w-xl mx-auto mt-4">The very first picture sent, video call made, and audio call placed on Booli — captured forever.</p>
+            </div>
+            <div class="grid md:grid-cols-3 gap-8">
+                <div class="glass-card p-8 text-center"><div class="relative mb-6 overflow-hidden rounded-3xl border border-[#134E8E]/40 bg-black/30"><img src="first-sent-picture.png" alt="First Sent Picture" class="w-full aspect-video object-cover"><div class="absolute top-4 right-4 bg-[#134E8E] text-white text-xs font-bold px-4 py-1 rounded-full flex items-center gap-1 shadow-md"><i class="fas fa-camera"></i> FIRST</div></div><h3 class="text-2xl font-bold text-white mb-3">First Sent Picture</h3><p class="text-gray-400">The very first high-quality image ever sent on Booli — instant delivery, crystal clear.</p></div>
+                <div class="glass-card p-8 text-center"><div class="relative mb-6 overflow-hidden rounded-3xl border border-[#134E8E]/40 bg-black/30"><img src="first-video-call.png" alt="First Video Call" class="w-full aspect-video object-cover"><div class="absolute top-4 right-4 bg-[#134E8E] text-white text-xs font-bold px-4 py-1 rounded-full flex items-center gap-1 shadow-md"><i class="fas fa-video"></i> FIRST</div></div><h3 class="text-2xl font-bold text-white mb-3">First Video Call</h3><p class="text-gray-400">Crystal-clear HD video call — the very first one that started it all with Agora.</p></div>
+                <div class="glass-card p-8 text-center"><div class="relative mb-6 overflow-hidden rounded-3xl border border-[#134E8E]/40 bg-black/30"><img src="first-audio-call.png" alt="First Audio Call" class="w-full aspect-video object-cover"><div class="absolute top-4 right-4 bg-[#134E8E] text-white text-xs font-bold px-4 py-1 rounded-full flex items-center gap-1 shadow-md"><i class="fas fa-phone-alt"></i> FIRST</div></div><h3 class="text-2xl font-bold text-white mb-3">First Audio Call</h3><p class="text-gray-400">The first voice call on Booli — pure clarity powered by Agora.</p></div>
+            </div>
+            <p class="text-center text-xs text-gray-500 mt-10">Replace images with your actual screenshots.</p>
+        </section>
+        
+        <!-- Features Grid -->
+        <section id="features" class="py-20 px-6 md:px-12 max-w-7xl mx-auto">
+            <div class="text-center mb-14">
+                <div class="inline-block px-3 py-1 rounded-full bg-[#8B1E1E]/20 text-[#e68a8a] text-xs font-mono mb-3 backdrop-blur-sm">WHAT'S INSIDE</div>
+                <h2 class="text-4xl md:text-5xl font-bold text-white">Powerful <span class="text-[#134E8E]">features</span> you'll love</h2>
+                <p class="text-gray-400 max-w-2xl mx-auto mt-4">Everything you need to stay connected, productive, and entertained — now with even more power.</p>
+            </div>
+            <div class="grid md:grid-cols-3 gap-6">
+                <div class="glass-card p-6"><div class="feature-icon mb-5"><i class="fas fa-comments"></i></div><h3 class="text-xl font-bold mb-2 text-white">Smart Messaging</h3><p class="text-gray-400 text-sm">Reactions, replies, edit, delete, forward, star, pin — total control.</p></div>
+                <div class="glass-card p-6"><div class="feature-icon mb-5"><i class="fas fa-phone-alt"></i></div><h3 class="text-xl font-bold mb-2 text-white">HD Audio & Video Calls</h3><p class="text-gray-400 text-sm">Agora-powered crystal-clear calls with screen sharing.</p></div>
+                <div class="glass-card p-6"><div class="feature-icon mb-5"><i class="fas fa-cloud-upload-alt"></i></div><h3 class="text-xl font-bold mb-2 text-white">Cloudinary Media</h3><p class="text-gray-400 text-sm">Upload images, videos, docs & voice notes instantly.</p></div>
+                <div class="glass-card p-6"><div class="feature-icon mb-5"><i class="fas fa-tasks"></i></div><h3 class="text-xl font-bold mb-2 text-white">Task Manager</h3><p class="text-gray-400 text-sm">Built-in task list with priorities and due dates.</p></div>
+                <div class="glass-card p-6"><div class="feature-icon mb-5"><i class="fas fa-language"></i></div><h3 class="text-xl font-bold mb-2 text-white">AI Translator</h3><p class="text-gray-400 text-sm">Translate messages instantly between multiple languages.</p></div>
+                <div class="glass-card p-6"><div class="feature-icon mb-5"><i class="fas fa-user-secret"></i></div><h3 class="text-xl font-bold mb-2 text-white">Privacy First</h3><p class="text-gray-400 text-sm">Block users, disappearing messages, encrypted flows.</p></div>
+                <div class="glass-card p-6"><div class="feature-icon mb-5"><i class="fas fa-image"></i></div><h3 class="text-xl font-bold mb-2 text-white">High Quality Image Send</h3><p class="text-gray-400 text-sm">Ultra-high-resolution photos with instant compression.</p></div>
+                <div class="glass-card p-6"><div class="feature-icon mb-5"><i class="fas fa-microphone"></i></div><h3 class="text-xl font-bold mb-2 text-white">Voice Mail</h3><p class="text-gray-400 text-sm">Leave beautiful voice messages.</p></div>
+                <div class="glass-card p-6"><div class="feature-icon mb-5"><i class="fas fa-robot"></i></div><h3 class="text-xl font-bold mb-2 text-white">AI Smart Assistant</h3><p class="text-gray-400 text-sm">Intelligent AI helper inside your chats.</p></div>
+                <div class="glass-card p-6"><div class="feature-icon mb-5"><i class="fas fa-lock"></i></div><h3 class="text-xl font-bold mb-2 text-white">File Vault</h3><p class="text-gray-400 text-sm">Secure encrypted storage for important files.</p></div>
+                <div class="glass-card p-6"><div class="feature-icon mb-5"><i class="fas fa-bullhorn"></i></div><h3 class="text-xl font-bold mb-2 text-white">Broadcast Messages</h3><p class="text-gray-400 text-sm">Mass messages for announcements.</p></div>
+                <div class="glass-card p-6"><div class="feature-icon mb-5"><i class="fas fa-chart-bar"></i></div><h3 class="text-xl font-bold mb-2 text-white">Analytics Dashboard</h3><p class="text-gray-400 text-sm">Insights & statistics for messaging trends.</p></div>
+                <div class="glass-card p-6"><div class="feature-icon mb-5"><i class="fas fa-plug"></i></div><h3 class="text-xl font-bold mb-2 text-white">Integrations</h3><p class="text-gray-400 text-sm">Connect with other apps effortlessly.</p></div>
+                <div class="glass-card p-6"><div class="feature-icon mb-5"><i class="fas fa-code"></i></div><h3 class="text-xl font-bold mb-2 text-white">Booli API for Business</h3><p class="text-gray-400 text-sm">Powerful API to integrate Booli into your workflows.</p></div>
+            </div>
+        </section>
+        
+        <!-- CREATORS SECTION -->
+        <section id="creators" class="py-20 px-6 md:px-12 max-w-7xl mx-auto">
+            <div class="text-center mb-14">
+                <div class="inline-block px-3 py-1 rounded-full bg-[#134E8E]/20 text-[#134E8E] text-xs font-mono mb-3 backdrop-blur-sm">THE MINDS BEHIND BOOLI</div>
+                <h2 class="text-4xl md:text-5xl font-bold text-white">Meet the <span class="text-[#134E8E]">Creators</span></h2>
+                <p class="text-gray-400 max-w-xl mx-auto mt-4">Two passionate developers from Bangladesh, crafting the future of communication.</p>
+            </div>
+            <div class="grid md:grid-cols-2 gap-10 max-w-5xl mx-auto">
+                <div class="glass-card p-8 text-center"><div class="relative w-40 h-40 mx-auto mb-5"><div class="absolute inset-0 rounded-full bg-[#134E8E]/15 blur-md"></div><img src="assets/support_amran.png" alt="Md. Amran" class="w-40 h-40 rounded-full object-cover border-4 border-[#134E8E] shadow-xl relative z-10"></div><h3 class="text-2xl font-bold text-white">Md. Amran</h3><p class="text-[#134E8E] font-mono text-sm mb-3">Lead Developer & Architect</p><p class="text-gray-400 text-sm mb-5">Full-stack engineer, UI/UX enthusiast, and open-source contributor.</p><div class="flex justify-center gap-4"><a href="https://github.com/md-amran" target="_blank" class="bg-[#1a1d23] p-2 rounded-full hover:bg-[#134E8E] transition"><i class="fab fa-github text-xl"></i></a><a href="https://md-amran.github.io/Portfolio/" target="_blank" class="bg-[#1a1d23] p-2 rounded-full hover:bg-[#134E8E] transition"><i class="fas fa-globe"></i></a></div></div>
+                <div class="glass-card p-8 text-center"><div class="relative w-40 h-40 mx-auto mb-5"><div class="absolute inset-0 rounded-full bg-[#134E8E]/15 blur-md"></div><img src="assets/support_musfiq.png" alt="Musfiq Ayon" class="w-40 h-40 rounded-full object-cover border-4 border-[#134E8E] shadow-xl relative z-10"></div><h3 class="text-2xl font-bold text-white">Musfiq Ayon</h3><p class="text-[#134E8E] font-mono text-sm mb-3">Co-creator & Product Designer</p><p class="text-gray-400 text-sm mb-5">Creative mind behind Booli's UI/UX, feature design, and community engagement.</p><div class="flex justify-center gap-4"><a href="https://github.com/MusfiqAyon-MSL3" target="_blank" class="bg-[#1a1d23] p-2 rounded-full hover:bg-[#134E8E] transition"><i class="fab fa-github text-xl"></i></a><a href="https://musfiqayon-msl3.github.io/Portfolio/" target="_blank" class="bg-[#1a1d23] p-2 rounded-full hover:bg-[#134E8E] transition"><i class="fas fa-briefcase"></i></a></div></div>
+            </div>
+            <div class="mt-16 text-center max-w-2xl mx-auto border-t border-gray-800 pt-10"><i class="fas fa-quote-left text-3xl text-[#8B1E1E] opacity-70 mb-3 block"></i><p class="text-gray-400 italic">“Booli was born from a late-night idea: build a messenger that doesn't compromise on speed, style, or security. We're just getting started.”</p><div class="flex justify-center gap-1 text-[#134E8E] text-xs mt-4">— Amran & Ayon</div></div>
+        </section>
+        
+        <!-- SUPPORT & FAQ SECTION -->
+        <!-- SUPPORT & FAQ SECTION -->
+    <section id="support" class="py-20 px-6 md:px-12 max-w-7xl mx-auto">
+        <div class="text-center mb-14">
+            <div class="inline-block px-3 py-1 rounded-full bg-[var(--hover)] text-[var(--primary)] text-xs font-mono mb-3">HELP CENTER</div>
+            <h2 class="text-4xl md:text-5xl font-bold text-[var(--text-primary)]">Support & <span class="text-[var(--primary)]">Guidance</span></h2>
+            <p class="text-[var(--text-secondary)] max-w-xl mx-auto mt-4">Find answers, report issues, or contact us directly.</p>
+        </div>
+        <div class="grid md:grid-cols-2 gap-10">
+            <div class="glass-card p-6 md:p-8">
+                <h3 class="text-2xl font-bold mb-6 flex items-center gap-2 text-[var(--text-primary)]"><i class="fas fa-circle-question text-[var(--primary)]"></i> Frequently Asked</h3>
+                <div class="space-y-5">
+                    <div><p class="font-semibold text-[var(--text-primary)]">🔹 How do I make a call on Booli?</p><p class="text-[var(--text-secondary)] text-sm mt-1">Open any chat → tap phone (audio) or video icon → call connects instantly using Agora HD engine.</p></div>
+                    <div><p class="font-semibold text-[var(--text-primary)]">🔹 Is my data safe?</p><p class="text-[var(--text-secondary)] text-sm mt-1">Yes! Booli uses Firebase security rules, encrypted database, and optional disappearing messages.</p></div>
+                    <div><p class="font-semibold text-[var(--text-primary)]">🔹 Can I use Booli on multiple devices?</p><p class="text-[var(--text-secondary)] text-sm mt-1">Currently web version works across browsers. Mobile apps coming soon.</p></div>
+                    <div><p class="font-semibold text-[var(--text-primary)]">🔹 I forgot my username/password.</p><p class="text-[var(--text-secondary)] text-sm mt-1">Use "Forgot password?" on login screen. For username recovery, click "Forgot ID?" — we'll send details to your email.</p></div>
+                    <div><p class="font-semibold text-[var(--text-primary)]">🔹 How to report a bug or abusive user?</p><p class="text-[var(--text-secondary)] text-sm mt-1">Use the in-app report button or email us at <span class="text-[var(--primary)]">support@booli.app</span>.</p></div>
+                </div>
+            </div>
+            <div class="glass-card p-6 md:p-8">
+                <h3 class="text-2xl font-bold mb-6 flex items-center gap-2 text-[var(--text-primary)]"><i class="fas fa-headset text-[var(--primary)]"></i> Get in touch</h3>
+                <p class="text-[var(--text-secondary)] mb-6">We’d love to hear from you. Whether it’s feedback, feature request, or just saying hi.</p>
+                <div class="space-y-4">
+                    <a href="mailto:md.amran.914.me@gmail.com" class="flex items-center gap-4 p-3 rounded-xl bg-[var(--secondary)] hover:bg-[var(--hover)] transition group border border-[var(--border)] hover:border-[var(--primary)]/30"><i class="fas fa-envelope text-[var(--primary)] text-xl w-8"></i><div><p class="font-medium text-[var(--text-primary)]">Email Amran</p><p class="text-xs text-[var(--text-secondary)]">md.amran.914.me@gmail.com</p></div></a>
+                    <a href="mailto:musfiq.ayon2022@gmail.com" class="flex items-center gap-4 p-3 rounded-xl bg-[var(--secondary)] hover:bg-[var(--hover)] transition group border border-[var(--border)] hover:border-[var(--primary)]/30"><i class="fas fa-paper-plane text-[var(--primary)] text-xl w-8"></i><div><p class="font-medium text-[var(--text-primary)]">Email Ayon</p><p class="text-xs text-[var(--text-secondary)]">musfiq.ayon2022@gmail.com</p></div></a>
+                    <div class="flex items-center gap-4 p-3 rounded-xl bg-[var(--secondary)] border border-[var(--border)]"><i class="fab fa-github text-[var(--primary)] text-xl w-8"></i><div><p class="font-medium text-[var(--text-primary)]">Open Source</p><p class="text-xs text-[var(--text-secondary)]">Booli is opensource so — contributions welcome</p></div></div>
+                </div>
+                <div class="mt-8 pt-4 border-t border-[var(--border)]"><div class="flex gap-3 justify-start flex-wrap"><a href="https://github.com/md-amran/Portfolio" target="_blank" class="btn-outline-neon px-4 py-2 rounded-full text-sm"><i class="fab fa-github"></i> Amran's Portfolio</a><a href="https://github.com/MusfiqAyon-MSL3/Portfolio" target="_blank" class="btn-outline-neon px-4 py-2 rounded-full text-sm"><i class="fab fa-github"></i> Ayon's Portfolio</a></div></div>
+            </div>
+        </div>
+    </section>
+        
+        <!-- Stats -->
+        <section class="py-16 px-6 max-w-5xl mx-auto text-center"><div class="grid grid-cols-2 md:grid-cols-4 gap-5"><div class="glass-card p-5"><div class="text-3xl font-black text-[#134E8E]">2</div><div class="text-xs text-gray-500 mt-1">Founders</div></div><div class="glass-card p-5"><div id="live-user-count" class="text-3xl font-black text-[#134E8E]">50K+</div><div class="text-xs text-gray-500 mt-1">Active Users</div></div><div class="glass-card p-5"><div class="text-3xl font-black text-[#134E8E]">∞</div><div class="text-xs text-gray-500 mt-1">Messages sent</div></div><div class="glass-card p-5"><div class="text-3xl font-black text-[#134E8E]">v2.0</div><div class="text-xs text-gray-500 mt-1">Latest release</div></div></div></section>
+        
+        <!-- Footer -->
+        <footer class="border-t border-gray-800 py-12 px-6 mt-10 bg-black/50 backdrop-blur-xl"><div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6"><div class="flex items-center gap-3"><div class="w-8 h-8 bg-[#134E8E] rounded-lg flex items-center justify-center overflow-hidden"><img src="assets/booli_app_logo.png" alt="Booli Icon" class="w-10 h-10 object-contain"></div><span class="font-bold text-xl text-white">Booli<span class="text-[#134E8E]">.</span></span><span class="text-gray-500 text-sm ml-2">© 2026 — Next-Gen Messaging</span></div><div class="flex gap-6 text-gray-400 text-sm"><a href="#" class="hover:text-[#134E8E] transition">Privacy</a><a href="#" class="hover:text-[#134E8E] transition">Terms</a><a href="https://github.com/md-amran/Booli" target="_blank" class="hover:text-[#134E8E] transition"><i class="fab fa-github"></i> GitHub</a></div><div class="text-gray-500 text-xs">Made in Bangladesh</div></div></footer>
+        
+        <!-- MODAL & CHAT COMPONENTS (same functionality) -->
+        <div id="download-modal" class="hidden fixed inset-0 bg-black/90 z-[99999] items-center justify-center"><div class="glass-card w-full max-w-5xl mx-4 p-8 rounded-3xl modal"><div class="flex justify-between mb-6"><h2 class="text-3xl font-bold text-white flex items-center gap-3"><i class="fas fa-download text-[#134E8E]"></i>Download Booli</h2><button onclick="hideDownloadModal()" class="text-4xl leading-none text-gray-400 hover:text-white">×</button></div><p class="text-gray-300 mb-8">Choose your platform.</p><div class="grid grid-cols-2 md:grid-cols-4 gap-6"><div class="glass-card p-6 text-center"><i class="fab fa-windows text-6xl text-[#134E8E] mb-6"></i><h4 class="text-2xl font-bold text-white">Windows</h4><a href="#" onclick="startDownload('windows'); return false;" class="btn-neon w-full py-3 rounded-2xl block mt-4">Download</a></div><div class="glass-card p-6 text-center"><i class="fab fa-apple text-6xl text-[#134E8E] mb-6"></i><h4 class="text-2xl font-bold text-white">macOS</h4><a href="#" onclick="startDownload('mac'); return false;" class="btn-neon w-full py-3 rounded-2xl block mt-4">Download</a></div><div class="glass-card p-6 text-center"><i class="fab fa-linux text-6xl text-[#134E8E] mb-6"></i><h4 class="text-2xl font-bold text-white">Linux</h4><a href="#" onclick="startDownload('linux'); return false;" class="btn-neon w-full py-3 rounded-2xl block mt-4">Download</a></div><div class="glass-card p-6 text-center"><i class="fab fa-android text-6xl text-[#134E8E] mb-6"></i><h4 class="text-2xl font-bold text-white">Android</h4><a href="#" onclick="startDownload('android'); return false;" class="btn-neon w-full py-3 rounded-2xl block mt-4">Download</a></div></div></div></div>
+        
+        <div id="floating-buttons" class="fixed bottom-6 right-6 flex flex-col gap-4"><button id="go-to-top-btn" onclick="goToTop()" class="btn-neon w-14 h-14 rounded-2xl shadow-2xl flex items-center justify-center text-2xl opacity-0 translate-y-4 pointer-events-none"><i class="fas fa-arrow-up"></i></button><button onclick="toggleChat()" class="btn-red-accent w-14 h-14 rounded-2xl shadow-2xl flex items-center justify-center text-2xl"><i class="fas fa-headset"></i></button></div>
+        
+        <div id="chat-window" class="hidden fixed bottom-28 right-6 w-96 rounded-3xl shadow-2xl border overflow-hidden z-[100000]"><div class="flex items-center justify-between px-6 py-4 border-b bg-[#134E8E] text-white"><div class="flex items-center gap-3"><div class="w-9 h-9 bg-white rounded-2xl flex items-center justify-center overflow-hidden"><img src="assets/booli_favicon_16.png" alt="Booli Icon" class="w-7 h-7 object-contain"></div><div><p class="font-bold text-lg">Booli</p><p class="text-xs opacity-75"><span class="w-2 h-2 bg-green-400 rounded-full inline-block mr-1"></span>AI Support Agent</p></div></div><button onclick="toggleChat()" class="text-4xl leading-none text-white/80">×</button></div><div id="chat-messages" class="h-96 p-5 overflow-y-auto bg-black/50 flex flex-col gap-4"><div class="flex gap-3"><div class="w-9 h-9 bg-[#134E8E] text-white rounded-2xl flex items-center justify-center"><i class="fas fa-robot"></i></div><div class="bg-gray-800/80 px-4 py-3 rounded-3xl rounded-tl-none max-w-[75%] text-sm text-gray-200">Hi there! 👋 I'm Booli, your AI support agent.<br>How can I help you?</div></div></div><div class="p-4 border-t border-gray-700 bg-black/50 flex items-center gap-2"><input id="chat-input" type="text" placeholder="Type a message..." class="flex-1 bg-gray-800/80 border border-gray-600 focus:border-[#134E8E] rounded-3xl px-6 py-4 text-sm text-white focus:outline-none" onkeydown="if(event.key === 'Enter') sendChatMessage()"><button onclick="sendChatMessage()" class="btn-neon w-12 h-12 rounded-3xl flex items-center justify-center text-xl"><i class="fas fa-paper-plane"></i></button></div></div>
+    </div>
+    
+    <script>
+    // ========== SHOOTING STARS EFFECT ==========
+    const canvas = document.getElementById('starCanvas');
+    const ctx = canvas.getContext('2d');
+    let stars = [];
+    let scrollSpeed = 0;
+    let animationId;
+    let scrollDirection = 0;
+    let lastScrollY = window.scrollY;
+    let scrollVelocity = 0;
+    
+    function resizeCanvas() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        initStars();
+    }
+    
+    function initStars() {
+        stars = [];
+        const starCount = Math.floor((canvas.width * canvas.height) / 12000);
+        for (let i = 0; i < starCount; i++) {
+            stars.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                radius: Math.random() * 1.5 + 0.5,
+                alpha: Math.random() * 0.6 + 0.2,
+                speed: Math.random() * 1.5 + 0.3,
+                trailLength: Math.random() * 15 + 8,
+                angle: Math.random() * Math.PI * 2,
+                randomMove: Math.random() < 0.25,  // কিছু কিছু তারা স্ক্রল না করলেও র‍্যান্ডমলি এদিক ওদিক ছুটাছুটি করবে
+                vx: (Math.random() - 0.5) * 0.8,
+                vy: (Math.random() - 0.5) * 0.8
+            });
+        }
+    }
+    
+    function drawStars() {
+        if (!ctx) return;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // Calculate base movement based on scroll speed and DIRECTION (scroll up/down এর উপর ভিত্তি করে উল্টো দিক থেকে নড়বে)
+        const baseMoveX = scrollSpeed * 0.8 * ((scrollDirection || 1) * -1);
+        const baseMoveY = scrollSpeed * 0.5 * ((scrollDirection || 1) * -1);
+        
+        const trailIntensity = Math.min(1, scrollSpeed / 300);
+        
+        for (let star of stars) {
+            // RANDOM MOVEMENT for some stars even without scrolling
+            if (star.randomMove) {
+                if (Math.random() < 0.03) {
+                    star.vx = (Math.random() - 0.5) * 1.5;
+                    star.vy = (Math.random() - 0.5) * 1.5;
+                }
+                star.x += star.vx;
+                star.y += star.vy;
+                star.vx *= 0.95;
+                star.vy *= 0.95;
+            }
+            
+            // SCROLL-BASED MOVEMENT - opposite direction for parallax (scroll up = একদিক, scroll down = উল্টো দিক)
+            const scrollMoveX = baseMoveX + star.speed * (scrollSpeed / 100) * ((scrollDirection || 1) * -1);
+            const scrollMoveY = baseMoveY + star.speed * (scrollSpeed / 80) * ((scrollDirection || 1) * -1);
+            
+            star.x += scrollMoveX * 0.5;
+            star.y += scrollMoveY * 0.3;
+            
+            // Wrap around edges
+            if (star.x < -50) star.x = canvas.width + 50;
+            if (star.x > canvas.width + 50) star.x = -50;
+            if (star.y < -50) star.y = canvas.height + 50;
+            if (star.y > canvas.height + 50) star.y = -50;
+            
+            // Draw star with trail effect (shooting star look)
+            ctx.beginPath();
+            ctx.arc(star.x, star.y, star.radius + (scrollSpeed / 500), 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(255, 255, 200, ${star.alpha + trailIntensity * 0.5})`;
+            ctx.fill();
+            
+            // Draw trail (shooting star effect) - longer trail when scrolling faster + direction aware
+            if (scrollSpeed > 50) {
+                const trailLength = star.trailLength * (scrollSpeed / 200);
+                ctx.beginPath();
+                ctx.moveTo(star.x, star.y);
+                const angle = Math.atan2(baseMoveY, baseMoveX);
+                const trailX = star.x - Math.cos(angle) * trailLength;
+                const trailY = star.y - Math.sin(angle) * trailLength;
+                ctx.lineTo(trailX, trailY);
+                ctx.strokeStyle = `rgba(19, 78, 142, ${0.4 + trailIntensity * 0.4})`;
+                ctx.lineWidth = star.radius * 1.5;
+                ctx.stroke();
+            }
+            
+            // Extra glow for stars
+            ctx.beginPath();
+            ctx.arc(star.x, star.y, star.radius * 1.5, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(19, 78, 142, ${0.1 + trailIntensity * 0.2})`;
+            ctx.fill();
+        }
+        
+        animationId = requestAnimationFrame(drawStars);
+    }
+    
+    // Track scroll speed + direction with momentum (পেজ স্ক্রল স্মুথ করার জন্য optimized)
+    function updateScrollSpeed() {
+        const currentScrollY = window.scrollY;
+        const delta = currentScrollY - lastScrollY;
+        scrollVelocity = Math.abs(delta);
+        if (delta !== 0) {
+            scrollDirection = Math.sign(delta);
+        }
+        // Smooth scroll speed for star movement
+        scrollSpeed = scrollSpeed * 0.92 + scrollVelocity * 0.08;
+        if (scrollSpeed < 0.5) scrollSpeed = 0;
+        lastScrollY = currentScrollY;
+        requestAnimationFrame(updateScrollSpeed);
+    }
+    
+    window.addEventListener('resize', () => {
+        resizeCanvas();
+    });
+    
+    resizeCanvas();
+    updateScrollSpeed();
+    drawStars();
+    
+    // ========== ORIGINAL FUNCTIONALITIES (PRESERVED) ==========
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function(e) {
+            e.preventDefault();
+            const target = document.querySelector(this.getAttribute('href'));
+            if(target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+    });
+    
+    function showDownloadModal() { 
+        const modal = document.getElementById('download-modal'); 
+        modal.classList.remove('hidden'); 
+        modal.classList.add('flex'); 
+    }
+    function hideDownloadModal() { 
+        const modal = document.getElementById('download-modal'); 
+        modal.classList.add('hidden'); 
+        modal.classList.remove('flex'); 
+    }
+    function startDownload(platform) { 
+        console.log(`📥 Starting download for ${platform}...`); 
+        hideDownloadModal(); 
+        alert(`✅ Download started for ${platform.toUpperCase()}!\n\n(Replace with your actual file links later)`); 
+    }
+    
+// ========== FIREBASE INITIALIZATION ==========
+const firebaseConfig = {
+    apiKey: "AIzaSyC6AFh9JTidPbWVaaZ4HgP83z8QJ7G3hrQ",
+    authDomain: "booli-c0bab.firebaseapp.com",
+    databaseURL: "https://booli-c0bab-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "booli-c0bab",
+    storageBucket: "booli-c0bab.firebasestorage.app",
+    messagingSenderId: "388511023364",
+    appId: "1:388511023364:web:9e4a59cef1920217a65051",
+    measurementId: "G-LZW8F0SLXN"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+// ========== ইউজার কাউন্ট আপডেট ফাংশন ==========
+async function getUserCount() {
+    try {
+        // প্রথমে চেষ্টা করি app_stats/stats থেকে নেয়ার
+        const statsRef = db.collection('app_stats').doc('stats');
+        const doc = await statsRef.get();
+        
+        if (doc.exists && doc.data().totalUsers) {
+            return doc.data().totalUsers;
+        }
+        
+        // যদি না থাকে, তাহলে users collection থেকে কাউন্ট করি
+        const usersSnapshot = await db.collection('users').get();
+        return usersSnapshot.size; // মোট ইউজার সংখ্যা
+        
+    } catch (error) {
+        console.error('কাউন্ট নিতে সমস্যা:', error);
+        return 50000; // error হলে ডিফল্ট ভ্যালু
+    }
+}
+
+// ========== স্ট্যাটস সেকশনের জন্য (50K+) ==========
+async function updateStatsUserCount() {
+    const liveElement = document.getElementById('live-user-count');
+    if (!liveElement) {
+        console.log('live-user-count এলিমেন্ট পাওয়া যায়নি');
+        return;
+    }
+
+    try {
+        const count = await getUserCount();
+        
+        // 50K+ ফরম্যাটে দেখানো
+        let formatted;
+        if (count >= 10000) {
+            const kValue = Math.floor(count / 1000);
+            formatted = kValue + 'K+';
+        } else {
+            formatted = count.toLocaleString() + '+';
+        }
+        
+        liveElement.textContent = formatted;
+        console.log(`✅ স্ট্যাটস আপডেট: ${count} → ${formatted}`);
+        
+    } catch (error) {
+        console.error('❌ স্ট্যাটস আপডেটে সমস্যা:', error);
+        liveElement.textContent = '50K+';
+    }
+}
+
+// ========== এবাউট সেকশনের জন্য (50,000+) ==========
+let animationStarted = false;
+
+async function updateAboutUserCount() {
+    const aboutElement = document.getElementById('about-user-count');
+    if (!aboutElement) {
+        console.log('about-user-count এলিমেন্ট পাওয়া যায়নি');
+        return;
+    }
+
+    try {
+        const count = await getUserCount();
+        
+        // ডাটা অ্যাট্রিবিউটে সেভ করে রাখি
+        aboutElement.setAttribute('data-target', count);
+        
+        // যদি অ্যানিমেশন শুরু না হয়ে থাকে, তাহলে সেটআপ করি
+        if (!animationStarted) {
+            setupScrollAnimation();
+        }
+        
+        console.log(`✅ এবাউট কাউন্ট রেডি: ${count}`);
+        
+    } catch (error) {
+        console.error('❌ এবাউট আপডেটে সমস্যা:', error);
+        aboutElement.setAttribute('data-target', 50000);
+        aboutElement.textContent = '50,000';
+    }
+}
+
+// ========== কাউন্টার অ্যানিমেশন ==========
+function startCounter(element, targetNumber) {
+    let current = 0;
+    const duration = 2000; // 2 সেকেন্ড
+    const increment = targetNumber / (duration / 16); // 60fps এর জন্য
+    
+    const timer = setInterval(() => {
+        current += increment;
+        
+        if (current >= targetNumber) {
+            current = targetNumber;
+            clearInterval(timer);
+        }
+        
+        // কমা দিয়ে ফরম্যাট করে দেখানো
+        element.textContent = Math.floor(current).toLocaleString('en-US');
+        
+    }, 16);
+}
+
+// ========== স্ক্রল অ্যানিমেশন সেটআপ ==========
+function setupScrollAnimation() {
+    const aboutSection = document.getElementById('about');
+    if (!aboutSection) {
+        console.log('about সেকশন পাওয়া যায়নি');
+        return;
+    }
+    
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            // যখন সেকশন ভিউতে আসে
+            if (entry.isIntersecting && !animationStarted) {
+                const counterElement = document.getElementById('about-user-count');
+                if (counterElement) {
+                    const targetCount = parseInt(counterElement.getAttribute('data-target')) || 50000;
+                    startCounter(counterElement, targetCount);
+                    animationStarted = true;
+                    observer.unobserve(aboutSection); // একবার কাজ করলেই থামবে
+                }
+            }
+        });
+    }, { threshold: 0.5 }); // 50% visible হলে ট্রিগার হবে
+    
+    observer.observe(aboutSection);
+}
+
+// ========== ম্যানুয়ালি কাউন্ট আপডেট করার ফাংশন ==========
+async function forceUpdateCounts() {
+    console.log('🔄 ফোর্স আপডেট শুরু...');
+    await updateStatsUserCount();
+    await updateAboutUserCount();
+    console.log('✅ ফোর্স আপডেট শেষ');
+}
+
+// ========== সবকিছু ইনিশিয়ালাইজ ==========
+async function initialize() {
+    console.log('🚀 অ্যাপ ইনিশিয়ালাইজ শুরু...');
+    
+    // প্রথমে কাউন্ট আপডেট করি
+    await updateStatsUserCount();
+    await updateAboutUserCount();
+    
+    // প্রতি ১ মিনিট পর পর আপডেট
+    setInterval(async () => {
+        await updateStatsUserCount();
+        await updateAboutUserCount();
+    }, 60000);
+    
+    console.log('✅ অ্যাপ রেডি!');
+}
+
+// শুরু করি
+initialize();
+
+// ডিবাগিং এর জন্য উইন্ডোতে ফাংশন যোগ করি (console থেকে forceUpdateCounts() কল করা যাবে)
+window.forceUpdateCounts = forceUpdateCounts;
+    
+
+
+    const goToTopBtn = document.getElementById('go-to-top-btn'); 
+    function goToTop() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
+    function toggleChat() { const chatWindow = document.getElementById('chat-window'); chatWindow.classList.toggle('hidden'); }
+    
+    function sendChatMessage() { 
+        const input = document.getElementById('chat-input'); 
+        const messageText = input.value.trim(); 
+        if (!messageText) return; 
+        const messagesContainer = document.getElementById('chat-messages'); 
+        const userBubble = document.createElement('div'); 
+        userBubble.className = 'flex justify-end'; 
+        userBubble.innerHTML = `<div class="bg-[#134E8E] text-white px-4 py-3 rounded-3xl rounded-tr-none max-w-[75%] text-sm">${messageText}</div>`; 
+        messagesContainer.appendChild(userBubble); 
+        messagesContainer.scrollTop = messagesContainer.scrollHeight; 
+        input.value = ''; 
+        setTimeout(() => { 
+            const aiBubble = document.createElement('div'); 
+            aiBubble.className = 'flex gap-3'; 
+            aiBubble.innerHTML = `<div class="w-9 h-9 bg-[#134E8E] text-white rounded-2xl flex items-center justify-center"><i class="fas fa-robot"></i></div><div class="bg-gray-800/80 px-4 py-3 rounded-3xl rounded-tl-none max-w-[75%] text-sm text-gray-200">Got it! I'm Booli, your AI assistant.<br>Let me know if you need help with features, bugs, or anything else 🙂</div>`; 
+            messagesContainer.appendChild(aiBubble); 
+            messagesContainer.scrollTop = messagesContainer.scrollHeight; 
+        }, 900); 
+    }
+    
+    window.addEventListener('scroll', () => { 
+        if (window.scrollY > 500) { 
+            goToTopBtn.classList.remove('opacity-0', 'translate-y-4', 'pointer-events-none'); 
+            goToTopBtn.classList.add('opacity-100', 'translate-y-0'); 
+        } else { 
+            goToTopBtn.classList.add('opacity-0', 'translate-y-4', 'pointer-events-none'); 
+            goToTopBtn.classList.remove('opacity-100', 'translate-y-0'); 
+        } 
+    });
+    
+    console.log("%c✨ BOOLI — AMOLED BLACK + GLOSSY EFFECT + DYNAMIC SHOOTING STARS ✨", "color: #134E8E; font-size: 16px; font-weight: bold;");
+    </script>
+</body>
+</html>
